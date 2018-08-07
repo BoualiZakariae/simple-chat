@@ -1,0 +1,101 @@
+bin\windows\zookeeper-server-start.bat .\config\zookeeper.properties
+
+bin\windows\kafka-server-start.bat .\config\server.properties
+
+CREATE KEYSPACE sample
+WITH replication = {
+	'class' : 'SimpleStrategy',
+	'replication_factor' : 1
+};
+
+CREATE TABLE sample.user (
+	id UUID,
+	fname text,
+	lname text,
+	mobile text,
+	contacts set<text>,
+	PRIMARY KEY (id)
+);
+create index user_mobile_i on sample.user (mobile);
+
+insert into sample.user(id, mobile) values(11, '09364305493');
+
+CREATE TABLE sample.message (
+    user_id UUID,
+    second_user_id UUID,
+    id TIMEUUID,
+    author_id INT,
+    msg TEXT,
+    PRIMARY KEY ((user_id), second_user_id, id)
+) WITH CLUSTERING ORDER BY (second_user_id ASC, id DESC);
+
+CREATE TABLE sample.auth_key (
+	authkey TEXT,
+    user_id TEXT,
+    create_at timestamp,
+    PRIMARY KEY (authkey)
+);
+
+contact
+mobile
+first_name
+last_name
+
+
+/////////////////////////////////
+////////////////////////////////
+
+activation_code (
+    code,
+    mobile,
+    create_at
+)
+
+ActiveSession (
+    device_name,
+    activation_code,
+    auth_key
+)
+
+CREATE TABLE sample.user (
+	id int,
+	fname text,
+	lname text,
+	mobile text,
+	auth_keys set,
+	PRIMARY KEY (id)
+);
+
+CREATE TABLE sample.user_messages (
+    user_id INT,
+    second_user_id INT,
+    id TIMEUUID,
+    author_id INT,
+    message TEXT,
+    PRIMARY KEY ((user_id), second_user_id, id)
+) WITH CLUSTERING ORDER BY (second_user_id ASC, message_id DESC);
+
+CREATE TABLE chat.user_messages (
+    user_id INT,
+    other_user_id INT,
+    message_id TIMEUUID,
+    message_author_id INT,
+    message_body TEXT,
+    PRIMARY KEY ((user_id), other_user_id, message_id)
+) WITH CLUSTERING ORDER BY (other_user_id ASC, message_id DESC);
+
+CREATE TABLE sample.message (
+	message_id TIMEUUID,
+	sender_id text,
+	to_id text,
+	msg text,
+	PRIMARY KEY (id, sender_id, to_id)
+);
+
+CREATE TABLE sample.message (
+	id int,
+	sender_id text,
+	to_id text,
+	msg text,
+	PRIMARY KEY (id, sender_id, to_id)
+);
