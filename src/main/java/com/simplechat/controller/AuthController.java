@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 public class AuthController {
 
@@ -83,12 +85,12 @@ public class AuthController {
 
             // get user id by mobile number
             User userResult = userRepository.getIdByMobile(mobile);
-            String userId = null;
+            UUID userId = null;
 
             if(userResult == null) {
 
                 // if not exist create it in persistence database
-                userId = UUIDs.random().toString();
+                userId = UUIDs.random();
                 User user = new User();
                 user.setId(userId);
                 user.setMobile(mobile);
@@ -98,7 +100,7 @@ public class AuthController {
                 userId = userResult.getId();
             }
 
-            authService.addAuthKeyForUser(userId, auth_key);
+            authService.addAuthKeyForUser(userId.toString(), auth_key);
 
             return new ResponseEntity<String>(new JSONObject().put("status", "ok").put("auth_key", auth_key).toString(), HttpStatus.OK);
         }

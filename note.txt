@@ -13,7 +13,7 @@ CREATE TABLE sample.user (
 	fname text,
 	lname text,
 	mobile text,
-	contacts set<text>,
+	contacts map<text, text>,  // {"mobile" , {"fname":"first name", "lanme":"last name", "userId", "user id"}}
 	PRIMARY KEY (id)
 );
 create index user_mobile_i on sample.user (mobile);
@@ -37,10 +37,20 @@ CREATE TABLE sample.auth_key (
 );
 
 contact
+The current user's contact list and info on users.
+
+user_id
+mutual
+
+&&&
+
+user_id
 mobile
 first_name
 last_name
-
+photo
+status
+username
 
 /////////////////////////////////
 ////////////////////////////////

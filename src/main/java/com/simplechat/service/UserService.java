@@ -5,6 +5,7 @@ import com.simplechat.model.Contact;
 import com.simplechat.model.User;
 
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Mohsen Jahanshahi
@@ -32,4 +33,11 @@ public interface UserService {
      * @param replace if true replace all contacts with new ones else just appent to old contact list
      */
     void importContacts(String userId, Set<Contact> contacts, boolean replace);
+
+    /**
+     * return all contact of user
+     * @param userId id of user that we want to return his contacts
+     * @return
+     */
+    Set<Contact> getContacts(UUID userId);
 }

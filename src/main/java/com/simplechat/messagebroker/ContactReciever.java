@@ -4,6 +4,7 @@ import com.simplechat.exception.NotFoundException;
 import com.simplechat.model.Contact;
 import com.simplechat.model.User;
 import com.simplechat.service.UserService;
+import com.simplechat.websocket.MessageHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Mohsen Jahanshahi
@@ -29,6 +31,9 @@ public class ContactReciever {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    MessageHandler messageHandler;
 
     @KafkaListener(topics = "CONTACTS_IMPORT_CONTACTS")
     public void importContacts(@Payload String message, @Headers MessageHeaders headers) {
@@ -63,4 +68,53 @@ public class ContactReciever {
         // import contact
         userService.importContacts(userId, contacts, replace);
     }
+
+    /**
+     * return all contact of user
+     * @param message
+     * @param headers
+     */
+    @KafkaListener(topics = "CONTACTS_GET_CONTACTS")
+    public void getContacts(@Payload String message, @Headers MessageHeaders headers) {
+
+        // send to socket
+        JSONObject jsonObject = new JSONObject(message);
+
+        String authKey = jsonObject.getString("auth_key");
+
+        // get user id by auth key
+        String userId;
+        try {
+            userId = userService.getUserIdByAuthKey(authKey);
+        } catch (NotFoundException e) {
+            // @todo return error status
+            return;
+        }
+
+
+        // get all contacts from persistence
+        Set<Contact> contacts = userService.getContacts(UUID.fromString(userId));
+
+        // wrap data with json
+        JSONArray contactsArr = new JSONArray();
+        for(Contact contact : contacts) {
+
+            JSONObject contactObj = new JSONObject();
+            contactObj.put("mobile", contact.getMobile());
+            contactObj.put("first_name", contact.getFname());
+            contactObj.put("last_name", contact.getLname());
+
+            contactsArr.put(contactObj);
+        }
+
+        // send data to user
+        try {
+            messageHandler.sendMessageToUser(userId, contactsArr.toString());
+        } catch (IOException e) {
+            LOG.warn("error sending data to user : ", e);
+            // @todo return error status
+        }
+    }
+
+
 }
