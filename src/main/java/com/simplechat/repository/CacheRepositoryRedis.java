@@ -39,6 +39,9 @@ public class CacheRepositoryRedis implements CacheRepository{
         try (Jedis jedis = JedisFactory.getConnection()) {
 
             jedis.hset(mobile, String.valueOf(activationCode), "");
+
+            // expire activation code after specific time
+            jedis.expire(mobile, 10*60);
         } catch (Exception e) {
 
         }
