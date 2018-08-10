@@ -28,6 +28,10 @@ public class Message implements Serializable {
     @CassandraType(type = DataType.Name.UUID)
     private String secondUserId;
 
+    @Column("author_id")
+    @CassandraType(type = DataType.Name.UUID)
+    private UUID authorId;
+
     private String msg;
 
     public Message() {
@@ -63,5 +67,13 @@ public class Message implements Serializable {
 
     public void setMsg(String msg) {
         this.msg = msg;
+    }
+
+    public UUID getAuthorId() {
+        return authorId;
+    }
+
+    public void setAuthorId(UUID authorId) {
+        this.authorId = authorId;
     }
 }

@@ -24,7 +24,7 @@ CREATE TABLE sample.message (
     user_id UUID,
     second_user_id UUID,
     id TIMEUUID,
-    author_id INT,
+    author_id UUID,
     msg TEXT,
     PRIMARY KEY ((user_id), second_user_id, id)
 ) WITH CLUSTERING ORDER BY (second_user_id ASC, id DESC);

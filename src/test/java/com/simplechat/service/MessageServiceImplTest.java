@@ -94,15 +94,15 @@ public class MessageServiceImplTest {
 
     }
 
-    @Test
-    public void messagesGetHistory_check_call_repository_on_success() throws NotFoundException{
-
-        int offset = 110;
-        when(userService.getUserIdByAuthKey(authKey)).thenReturn(userId);
-
-        messageService.messagesGetHistory(authKey, toId, offset);
-
-        verify(messageRepository).messagesGetHistory(userId, toId, offset);
-    }
+//    @Test
+//    public void messagesGetHistory_check_call_repository_on_success() throws NotFoundException{
+//
+//        int offset = 110;
+//        when(userService.getUserIdByAuthKey(authKey)).thenReturn(userId);
+//
+//        messageService.messagesGetHistory(authKey, toId, offset);
+//
+//        verify(messageRepository).messagesGetHistory(userId, toId, offset);
+//    }
 
 }

@@ -8,14 +8,16 @@ import com.simplechat.repository.CacheRepository;
 import com.simplechat.repository.MessageRepository;
 import com.simplechat.repository.UserRepository;
 import com.simplechat.websocket.MessageHandler;
-import com.simplechat.websocket.WebSocketPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Mohsen Jahanshahi
@@ -54,17 +56,15 @@ public class MessageServiceImpl implements MessageService{
     }
 
     @Override
-    public void messagesGetHistory(String authKey, String peer, int offset) {
+    public List<Message> messagesGetHistory(UUID userId, UUID toUserId, UUID offsetId) {
 
-        // get user id
-        String senderId;
-        try {
-            senderId = userService.getUserIdByAuthKey(authKey);
-        } catch (NotFoundException e) {
-            return;
+        if(offsetId == null) {
+            return messageRepository.messagesGetHistory(userId, toUserId);
+
         }
-
-        messageRepository.messagesGetHistory(senderId, peer, offset);
+        else {
+            return messageRepository.messagesGetHistoryWithOffset(userId, toUserId, offsetId);
+        }
     }
 
     /**
@@ -88,6 +88,7 @@ public class MessageServiceImpl implements MessageService{
         message1.setId(messageId);
         message1.setSender_id(senderId);
         message1.setTo_id(toId);
+        message1.setAuthorId(UUID.fromString(senderId));
         message1.setMsg(msg);
         messageRepository.save(message1);
 
@@ -95,6 +96,7 @@ public class MessageServiceImpl implements MessageService{
         message2.setId(messageId);
         message2.setSender_id(toId);
         message2.setTo_id(senderId);
+        message1.setAuthorId(UUID.fromString(senderId));
         message2.setMsg(msg);
         messageRepository.save(message2);
     }

@@ -1,5 +1,10 @@
 package com.simplechat.service;
 
+import com.simplechat.model.Message;
+
+import java.util.List;
+import java.util.UUID;
+
 /**
  * @author Mohsen Jahanshahi
  */
@@ -15,9 +20,9 @@ public interface MessageService {
 
     /**
      * return message history for chat
-     * @param authKey current user AuthKey
-     * @param peer Target user
-     * @param offset Number of list elements to be skipped
+     * @param userId current user id
+     * @param toUserId Target user id
+     * @param offsetId if not null message before this will return
      */
-    void messagesGetHistory(String authKey, String peer, int offset);
+    List<Message> messagesGetHistory(UUID userId, UUID toUserId, UUID offsetId);
 }
