@@ -7,9 +7,13 @@ import com.simplechat.repository.UserRepository;
 import com.simplechat.security.AuthKeyHelper;
 import com.simplechat.service.AuthService;
 import com.simplechat.util.StringHelper;
+import com.simplechat.util.api.ResponseEntityGenerator;
+import com.simplechat.util.api.ResultStatus;
+import com.simplechat.util.api.ValidationErrorStatus;
+import com.simplechat.util.api.ValidationErrorsJSON;
+import com.simplechat.util.validation.Validation;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,9 +46,16 @@ public class AuthController {
 
         JSONObject jsonObjectRequest = new JSONObject(request);
 
-        String mobile = jsonObjectRequest.getString("mobile");
 
-        // @todo validate mobile number
+        String mobile;
+        if(!jsonObjectRequest.has("mobile")) {
+            return ResponseEntityGenerator.createErrorResponseEntity(ResultStatus.VALIDATION_ERROR, new ValidationErrorsJSON().addError(ValidationErrorStatus.NOT_EMPTY, "mobile").getResult());
+        }
+        mobile = jsonObjectRequest.getString("mobile");
+
+        if(!Validation.isMobileValid(mobile)) {
+            return ResponseEntityGenerator.createErrorResponseEntity(ResultStatus.VALIDATION_ERROR, new ValidationErrorsJSON().addError(ValidationErrorStatus.NOT_MOBILE, "mobile").getResult());
+        }
 
         // generate random key
         int code = StringHelper.generateRandomNumber(6);
@@ -52,10 +63,9 @@ public class AuthController {
         // store user_id and code in redis in redis
         cacheRepository.storeActivationCodeForMobile(mobile, String.valueOf(code));
 
-        // @todo send sms
+        // @todo send sms with broker
 
-
-        return new ResponseEntity<String>(new JSONObject().put("status", "ok").toString(), HttpStatus.OK);
+        return ResponseEntityGenerator.createSuccesResponseEntity();
     }
 
     /**
@@ -69,10 +79,23 @@ public class AuthController {
 
         JSONObject jsonObjectRequest = new JSONObject(request);
 
-        String mobile = jsonObjectRequest.getString("mobile");
-        String code = jsonObjectRequest.getString("code");
+        // get and validate mobile
+        String mobile;
+        if(!jsonObjectRequest.has("mobile")) {
+            return ResponseEntityGenerator.createErrorResponseEntity(ResultStatus.VALIDATION_ERROR, new ValidationErrorsJSON().addError(ValidationErrorStatus.NOT_EMPTY, "mobile").getResult());
+        }
+        mobile = jsonObjectRequest.getString("mobile");
 
-        // @todo validate inputs
+        if(!Validation.isMobileValid(mobile)) {
+            return ResponseEntityGenerator.createErrorResponseEntity(ResultStatus.VALIDATION_ERROR, new ValidationErrorsJSON().addError(ValidationErrorStatus.NOT_MOBILE, "mobile").getResult());
+        }
+
+        // get and validate code
+        String code;
+        if(!jsonObjectRequest.has("code")) {
+            return ResponseEntityGenerator.createErrorResponseEntity(ResultStatus.VALIDATION_ERROR, new ValidationErrorsJSON().addError(ValidationErrorStatus.NOT_EMPTY, "code").getResult());
+        }
+        code = jsonObjectRequest.getString("code");
 
         String result = null;
         // get info by activation code and mobile
@@ -81,7 +104,7 @@ public class AuthController {
         if (result != null) {
 
             // generate an auth_key
-            String auth_key = AuthKeyHelper.generateAuthKey();
+            String authKey = AuthKeyHelper.generateAuthKey();
 
             // get user id by mobile number
             User userResult = userRepository.getIdByMobile(mobile);
@@ -100,13 +123,13 @@ public class AuthController {
                 userId = userResult.getId();
             }
 
-            authService.addAuthKeyForUser(userId.toString(), auth_key);
+            authService.addAuthKeyForUser(userId.toString(), authKey);
 
-            return new ResponseEntity<String>(new JSONObject().put("status", "ok").put("auth_key", auth_key).toString(), HttpStatus.OK);
+            return ResponseEntityGenerator.createSuccesResponseEntity(new JSONObject().put("auth_key", authKey));
+
         }
         else {
-            return new ResponseEntity<String>(new JSONObject().put("status", "error").put("auth_key", "").toString(), HttpStatus.OK);
-
+            return ResponseEntityGenerator.createErrorResponseEntity(ResultStatus.NOT_FOUND);
         }
     }
 
