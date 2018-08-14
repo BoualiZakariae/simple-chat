@@ -4,6 +4,9 @@ import com.simplechat.exception.NotFoundException;
 import com.simplechat.model.Message;
 import com.simplechat.service.MessageService;
 import com.simplechat.service.UserService;
+import com.simplechat.util.api.ResponseEntityGenerator;
+import com.simplechat.util.api.ResponseJsonGenerator;
+import com.simplechat.util.api.ResultStatus;
 import com.simplechat.websocket.MessageHandler;
 import com.simplechat.websocket.WebSocketPool;
 import org.json.JSONArray;
@@ -45,8 +48,8 @@ public class MessageReceiver {
         if (WebSocketPool.websockets.get(jsonObject.getString("send_to")) != null) {
 
             String sendTo = jsonObject.getString("send_to");
-            String msg = jsonObject.getString("msg");
             String authKey = jsonObject.getString("auth_key");
+            String msg = jsonObject.getString("msg");
 
             messageService.sendMessageToUser(authKey, sendTo, msg);
 
@@ -62,22 +65,44 @@ public class MessageReceiver {
         // send to socket
         JSONObject jsonObject = new JSONObject(message);
 
-        UUID offsetId = null;
-
-        if(jsonObject.has("offsetId")) {
-            offsetId = UUID.fromString(jsonObject.getString("offsetId"));
-        }
-
-        String toUserId = jsonObject.getString("peer");
         String authKey = jsonObject.getString("auth_key");
-
         UUID userId;
         try {
             userId = UUID.fromString(userService.getUserIdByAuthKey(authKey));
         } catch (NotFoundException e) {
-            e.printStackTrace();
-            return; // @todo return error
+            // if message not found just ignore request and return
+            return;
         }
+
+        UUID offsetId = null;
+        if(jsonObject.has("offsetId")) {
+            offsetId = UUID.fromString(jsonObject.getString("offsetId"));
+        }
+
+        // validation
+        if(!jsonObject.has("peer")) {
+            String data =  ResponseJsonGenerator.createErrorResponseEntity(ResultStatus.BAD_DATA);
+            try {
+                messageHandler.sendMessageToUser(userId.toString(), data);
+            } catch (IOException e) {
+                LOG.error("error sending message to user : ", e);
+            }
+            return;
+        }
+
+        String toUserId = jsonObject.getString("peer");
+
+        if(toUserId.isEmpty()) {
+            String data =  ResponseJsonGenerator.createErrorResponseEntity(ResultStatus.BAD_DATA);
+            try {
+                messageHandler.sendMessageToUser(userId.toString(), data);
+            } catch (IOException e) {
+                LOG.error("error sending message to user : ", e);
+            }
+            return;
+        }
+
+
 
         // get messages from 
         List<Message> messages = messageService.messagesGetHistory(userId, UUID.fromString(toUserId), offsetId);
@@ -99,7 +124,8 @@ public class MessageReceiver {
 
         // send the result to user
         try {
-            messageHandler.sendMessageToUser(userId.toString(), messagesArr.toString());
+            String data =  ResponseJsonGenerator.createSuccesResponseEntity(new JSONObject().put("messages", messagesArr));
+            messageHandler.sendMessageToUser(userId.toString(), data);
         } catch (IOException e) {
             LOG.error("error sending message to user : ", e);
         }

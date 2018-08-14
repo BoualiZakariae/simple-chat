@@ -11,6 +11,7 @@ public enum ResultStatus {
     VALIDATION_ERROR(3),
     ACCESS_DENIED(4),
     UNKNOWN_ERROR(5),
+    BAD_DATA(5),
     ;
 
     private int code;

@@ -4,6 +4,7 @@ import com.simplechat.exception.NotFoundException;
 import com.simplechat.model.Contact;
 import com.simplechat.model.User;
 import com.simplechat.service.UserService;
+import com.simplechat.util.api.ResponseJsonGenerator;
 import com.simplechat.websocket.MessageHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -67,6 +68,15 @@ public class ContactReciever {
 
         // import contact
         userService.importContacts(userId, contacts, replace);
+
+        String data =  ResponseJsonGenerator.createSuccesResponseEntity();
+
+        try {
+            messageHandler.sendMessageToUser(userId, data);
+        } catch (IOException e) {
+            LOG.warn("error sending data to user : " + userId, e);
+            return;
+        }
     }
 
     /**
@@ -87,7 +97,6 @@ public class ContactReciever {
         try {
             userId = userService.getUserIdByAuthKey(authKey);
         } catch (NotFoundException e) {
-            // @todo return error status
             return;
         }
 
@@ -110,10 +119,11 @@ public class ContactReciever {
 
         // send data to user
         try {
-            messageHandler.sendMessageToUser(userId, contactsArr.toString());
+            String data =  ResponseJsonGenerator.createSuccesResponseEntity(new JSONObject().put("contacts", contactsArr));
+            messageHandler.sendMessageToUser(userId, data);
+            
         } catch (IOException e) {
-            LOG.warn("error sending data to user : ", e);
-            // @todo return error status
+            LOG.warn("error sending data to user : " + userId, e);
         }
     }
 

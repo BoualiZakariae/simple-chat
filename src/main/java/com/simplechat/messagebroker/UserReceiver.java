@@ -4,6 +4,7 @@ import com.simplechat.exception.NotFoundException;
 import com.simplechat.model.User;
 import com.simplechat.service.MessageService;
 import com.simplechat.service.UserService;
+import com.simplechat.util.api.ResponseJsonGenerator;
 import com.simplechat.websocket.MessageHandler;
 import com.simplechat.websocket.WebSocketPool;
 import org.json.JSONArray;
@@ -41,6 +42,14 @@ public class UserReceiver {
         String authKey = jsonObject.getString("auth_key");
         JSONArray peers = jsonObject.getJSONArray("peers");
 
+        // get user id from auth_key to send data to
+        String userId = null;
+        try {
+            userId = userService.getUserIdByAuthKey(authKey);
+        } catch (NotFoundException e) {
+            return;
+        }
+
         // convert jsonarray of peers to string array
         String[] userIds = new String[peers.length()];
         for (int i = 0; i < userIds.length; i++) {
@@ -61,18 +70,12 @@ public class UserReceiver {
             users.put(jsonObjectUser);
         }
 
-        // get user id from auth_key to send data to
-        String userId = null;
         try {
-            userId = userService.getUserIdByAuthKey(authKey);
-        } catch (NotFoundException e) {
-            return;
-        }
 
-        try {
-            messageHandler.sendMessageToUser(userId, users.toString());
+            String data =  ResponseJsonGenerator.createSuccesResponseEntity(new JSONObject().put("users", users));
+            messageHandler.sendMessageToUser(userId, data);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.warn("error sending data to user : " + userId, e);
         }
 
     }

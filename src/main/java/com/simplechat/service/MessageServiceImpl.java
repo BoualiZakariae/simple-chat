@@ -7,12 +7,12 @@ import com.simplechat.model.Message;
 import com.simplechat.repository.CacheRepository;
 import com.simplechat.repository.MessageRepository;
 import com.simplechat.repository.UserRepository;
+import com.simplechat.util.api.ResponseJsonGenerator;
 import com.simplechat.websocket.MessageHandler;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,14 +45,22 @@ public class MessageServiceImpl implements MessageService{
     @Override
     public void sendMessageToUser(String authKey, String toId, String msg) {
 
+        // get user id
+        String senderId;
         try {
-            messageHandler.sendMessageToUser(toId, msg);
+            senderId = userService.getUserIdByAuthKey(authKey);
+        } catch (NotFoundException e) {
+            return;
+        }
+
+        try {
+            String data =  ResponseJsonGenerator.createSuccesResponseEntity(new JSONObject().put("msg", msg).put("senderId", senderId));
+            messageHandler.sendMessageToUser(toId, data);
         } catch (IOException e) {
             return;
         }
 
-        storeMessageToUser(authKey, toId, msg);
-
+        storeMessageToUser(senderId, toId, msg);
     }
 
     @Override
@@ -73,15 +81,8 @@ public class MessageServiceImpl implements MessageService{
      * @param toId
      * @param msg
      */
-    private void storeMessageToUser(String authKey, String toId, String msg) {
+    private void storeMessageToUser(String senderId, String toId, String msg) {
 
-        // get user id
-        String senderId;
-        try {
-            senderId = userService.getUserIdByAuthKey(authKey);
-        } catch (NotFoundException e) {
-            return;
-        }
         // store in cassandra
         String messageId = UUIDs.timeBased().toString();
         Message message1 = new Message();
