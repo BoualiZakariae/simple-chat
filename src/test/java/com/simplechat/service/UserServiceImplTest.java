@@ -2,7 +2,9 @@ package com.simplechat.service;
 
 import com.simplechat.exception.NotFoundException;
 import com.simplechat.model.Contact;
+import com.simplechat.model.UserByMobile;
 import com.simplechat.repository.CacheRepository;
+import com.simplechat.repository.UserByMobileRepository;
 import com.simplechat.repository.UserRepository;
 import org.json.JSONArray;
 import org.junit.Before;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -32,16 +35,20 @@ public class UserServiceImplTest {
     @Mock
     CacheRepository cacheRepository;
 
+    @Mock
+    UserByMobileRepository userByMobileRepository;
+
     @InjectMocks
     private UserService userService = new UserServiceImpl();
 
     private final String userId = "ff5eb38b-b9fe-4e6d-bad1-02ab3fe7146a";
     private String authKey = "22222-2";
     private Contact contacts1;
+    private final String mobile1 = "999999999";
 
     @Before
     public void setup() {
-        contacts1 = new Contact("09999", "myFirstName", "myLastName");
+        contacts1 = new Contact(mobile1, "myFirstName", "myLastName");
     }
 
     @Test
@@ -113,11 +120,16 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void importContacts_with_one_contact() {
+    public void importContacts_with_one_contact_without_user_id() {
+
+        Set<String> mobilesSet = new HashSet<>();
+        mobilesSet.add(mobile1);
+
+        Set<UserByMobile> userByMobiles = new HashSet<>();
+        when(userByMobileRepository.getUsersIdByMobile(mobilesSet)).thenReturn(userByMobiles);
 
         Set<Contact> contacts = new HashSet<>();
         contacts.add(contacts1);
-
         userService.importContacts(userId, contacts, true);
 
 
@@ -128,7 +140,31 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void getContacts_with_one_contact() {
+    public void importContacts_with_one_contact_with_user_id() {
+
+        Set<String> mobilesSet = new HashSet<>();
+        mobilesSet.add(mobile1);
+
+        Set<UserByMobile> userByMobiles = new HashSet<>();
+        userByMobiles.add(new UserByMobile(mobile1, UUID.fromString(userId)));
+
+        when(userByMobileRepository.getUsersIdByMobile(mobilesSet)).thenReturn(userByMobiles);
+
+        Set<Contact> contacts = new HashSet<>();
+        contacts.add(contacts1);
+
+        userService.importContacts(userId, contacts, true);
+
+
+        Map<String, String> contatsMap = new HashMap<>();
+
+        contatsMap.put(contacts1.getMobile(), new JSONArray().put(contacts1.getFname()).put(contacts1.getLname()).put(UUID.fromString(userId)).toString());
+
+        verify(userRepository).setContactForUserByUserId(UUID.fromString(userId), contatsMap);
+    }
+
+    @Test
+    public void getContacts_with_one_contact_without_user_id() {
 
         Map<String, Map> repoResult = new HashMap<>();
         Map<String, String> contatsMap = new HashMap<>();
@@ -146,5 +182,27 @@ public class UserServiceImplTest {
         assertEquals(contacts1.getMobile(), resultContact1.getMobile());
         assertEquals(contacts1.getFname(), resultContact1.getFname());
         assertEquals(contacts1.getLname(), resultContact1.getLname());
+    }
+
+    @Test
+    public void getContacts_with_one_contact_with_user_id() {
+
+        Map<String, Map> repoResult = new HashMap<>();
+        Map<String, String> contatsMap = new HashMap<>();
+        contatsMap.put(contacts1.getMobile(), new JSONArray().put(contacts1.getFname()).put(contacts1.getLname()).put(UUID.fromString(userId)).toString());
+        repoResult.put("contacts", contatsMap);
+
+        when(userRepository.getUserContactsByUserId(UUID.fromString(userId))).thenReturn(repoResult);
+
+        Set<Contact> resultContacts = userService.getContacts(UUID.fromString(userId));
+
+        assertEquals(1, resultContacts.size());
+
+        Contact resultContact1 = resultContacts.iterator().next();
+
+        assertEquals(contacts1.getMobile(), resultContact1.getMobile());
+        assertEquals(contacts1.getFname(), resultContact1.getFname());
+        assertEquals(contacts1.getLname(), resultContact1.getLname());
+        assertEquals(UUID.fromString(userId), resultContact1.getUserId());
     }
 }

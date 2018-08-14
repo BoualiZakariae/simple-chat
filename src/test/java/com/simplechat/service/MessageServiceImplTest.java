@@ -49,8 +49,8 @@ public class MessageServiceImplTest {
     @InjectMocks
     private MessageService messageService = new MessageServiceImpl();
 
-    private final String userId = "11";
-    private final String toId = "8888";
+    private final String userId = "ff5eb38b-b9fe-4e6d-bad1-02ab3fe7146a";
+    private final String toId = "69ca4e95-4e0c-412b-8751-03cea0f1cb08";
     private final String authKey = "22222-2";
     private final String msg = "salam chetori?";
     private final Date date1 = new Date();

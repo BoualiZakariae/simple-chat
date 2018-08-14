@@ -19,6 +19,13 @@ public class Contact {
         this.lname = lname;
     }
 
+    public Contact(String mobile, String fname, String lname, UUID userId) {
+        this.mobile = mobile;
+        this.fname = fname;
+        this.lname = lname;
+        this.userId = userId;
+    }
+
     public String getMobile() {
         return mobile;
     }

@@ -4,7 +4,9 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.simplechat.exception.NotFoundException;
 import com.simplechat.model.Contact;
 import com.simplechat.model.User;
+import com.simplechat.model.UserByMobile;
 import com.simplechat.repository.CacheRepository;
+import com.simplechat.repository.UserByMobileRepository;
 import com.simplechat.repository.UserRepository;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    UserByMobileRepository userByMobileRepository;
 
     @Autowired
     CacheRepository cacheRepository;
@@ -71,8 +76,26 @@ public class UserServiceImpl implements UserService {
         // prepare contacts to save in cassandra
         Map<String, String> contatsMap = new HashMap<>();
 
-        for(Contact contact : contacts) {
-            contatsMap.put(contact.getMobile(), new JSONArray().put(contact.getFname()).put(contact.getLname()).toString());
+        Set<String> mobiles = new HashSet<>();
+        for (Contact contact : contacts) {
+            mobiles.add(contact.getMobile());
+        }
+
+        Set<UserByMobile> usersIdByMobiles = userByMobileRepository.getUsersIdByMobile(mobiles);
+
+        Map<String, UUID> userMobilesMap = new HashMap<>();
+        for (UserByMobile userByMobile : usersIdByMobiles) {
+            userMobilesMap.put(userByMobile.getMobile(), userByMobile.getId());
+        }
+
+        for (Contact contact : contacts) {
+
+            // if user id exist for this contact add it
+            if (userMobilesMap.containsKey(contact.getMobile())) {
+                contatsMap.put(contact.getMobile(), new JSONArray().put(contact.getFname()).put(contact.getLname()).put(userMobilesMap.get(contact.getMobile())).toString());
+            } else {
+                contatsMap.put(contact.getMobile(), new JSONArray().put(contact.getFname()).put(contact.getLname()).toString());
+            }
         }
 
         // @todo affect replace parameter
@@ -91,7 +114,14 @@ public class UserServiceImpl implements UserService {
         for (Map.Entry<String, String> entry : contactsMap.entrySet()) {
 
             JSONArray contactData = new JSONArray(entry.getValue());
-            contacts.add(new Contact(entry.getKey(), contactData.getString(0), contactData.getString(1) ));
+
+            // if has user id to
+            if (contactData.length() == 3) {
+                contacts.add(new Contact(entry.getKey(), contactData.getString(0), contactData.getString(1), UUID.fromString(contactData.getString(2))));
+
+            } else {
+                contacts.add(new Contact(entry.getKey(), contactData.getString(0), contactData.getString(1)));
+            }
         }
 
         return contacts;

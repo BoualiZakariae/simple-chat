@@ -2,7 +2,9 @@ package com.simplechat.controller;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.simplechat.model.User;
+import com.simplechat.model.UserByMobile;
 import com.simplechat.repository.CacheRepository;
+import com.simplechat.repository.UserByMobileRepository;
 import com.simplechat.repository.UserRepository;
 import com.simplechat.security.AuthKeyHelper;
 import com.simplechat.service.AuthService;
@@ -35,6 +37,9 @@ public class AuthController {
     @Autowired
     CacheRepository cacheRepository;
 
+    @Autowired
+    UserByMobileRepository userByMobileRepository;
+
     /**
      * send activation code to the given mobile number
      *
@@ -64,6 +69,7 @@ public class AuthController {
         cacheRepository.storeActivationCodeForMobile(mobile, String.valueOf(code));
 
         // @todo send sms with broker
+        System.out.println("activation code is: " + code);
 
         return ResponseEntityGenerator.createSuccesResponseEntity();
     }
@@ -118,6 +124,10 @@ public class AuthController {
                 user.setId(userId);
                 user.setMobile(mobile);
                 userRepository.save(user);
+
+                // also save for better performance on queries on mobile
+                UserByMobile userByMobile = new UserByMobile(mobile, userId);
+                userByMobileRepository.save(userByMobile);
             }
             else {
                 userId = userResult.getId();

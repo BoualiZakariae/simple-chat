@@ -49,7 +49,7 @@ public class ContactReciever {
 
         for (int i = 0; i < contactsArr.length(); i++) {
 
-            JSONObject contactObj = contactsArr.getJSONObject(0);
+            JSONObject contactObj = contactsArr.getJSONObject(i);
             contacts.add(new Contact(
                     contactObj.getString("mobile"),
                     contactObj.getString("first_name"),
@@ -103,6 +103,7 @@ public class ContactReciever {
             contactObj.put("mobile", contact.getMobile());
             contactObj.put("first_name", contact.getFname());
             contactObj.put("last_name", contact.getLname());
+            contactObj.put("id", contact.getUserId());
 
             contactsArr.put(contactObj);
         }
